@@ -1,0 +1,308 @@
+/* Neomorphism Design System */
+:root {
+  /* Light shadows for neomorphism */
+  --neomorph-shadow-light: 
+    -8px -8px 16px rgba(0, 0, 0, 0.4),
+    8px 8px 16px rgba(255, 255, 255, 0.05);
+  
+  --neomorph-shadow-dark:
+    -5px -5px 10px rgba(0, 0, 0, 0.3),
+    5px 5px 10px rgba(255, 255, 255, 0.03);
+
+  /* Colored shadows for active states */
+  --neomorph-shadow-amber:
+    -6px -6px 12px rgba(0, 0, 0, 0.4),
+    6px 6px 12px rgba(245, 158, 11, 0.15);
+
+  /* Inset shadows for pressed states */
+  --neomorph-inset:
+    inset -5px -5px 10px rgba(0, 0, 0, 0.3),
+    inset 5px 5px 10px rgba(255, 255, 255, 0.03);
+
+  /* Gradient backgrounds */
+  --neomorph-gradient:
+    linear-gradient(145deg, #050505 0%, #0a0a0a 100%);
+  
+  --neomorph-gradient-subtle:
+    linear-gradient(135deg, #050505 0%, #080808 100%);
+
+  /* Soft accent glow */
+  --neomorph-glow-amber:
+    0 0 20px rgba(245, 158, 11, 0.3);
+  
+  --neomorph-glow-green:
+    0 0 20px rgba(34, 197, 94, 0.2);
+  
+  --neomorph-glow-red:
+    0 0 20px rgba(239, 68, 68, 0.2);
+}
+
+/* Neomorphism base class */
+.neomorph {
+  background: var(--neomorph-gradient);
+  box-shadow: var(--neomorph-shadow-dark);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.3s ease;
+}
+
+.neomorph:hover {
+  box-shadow: 
+    -8px -8px 16px rgba(0, 0, 0, 0.4),
+    8px 8px 16px rgba(255, 255, 255, 0.08),
+    0 0 20px rgba(245, 158, 11, 0.1);
+}
+
+.neomorph:active,
+.neomorph.pressed {
+  box-shadow: var(--neomorph-inset);
+  transform: scale(0.98);
+}
+
+/* Neomorphism card */
+.neomorph-card {
+  background: var(--neomorph-gradient-subtle);
+  box-shadow: 
+    -12px -12px 24px rgba(0, 0, 0, 0.3),
+    12px 12px 24px rgba(255, 255, 255, 0.04),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.neomorph-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 
+    -16px -16px 32px rgba(0, 0, 0, 0.4),
+    16px 16px 32px rgba(255, 255, 255, 0.06),
+    0 0 40px rgba(245, 158, 11, 0.15);
+}
+
+/* Neomorphism button */
+.neomorph-btn {
+  background: var(--neomorph-gradient);
+  box-shadow: 
+    -6px -6px 12px rgba(0, 0, 0, 0.3),
+    6px 6px 12px rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.neomorph-btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.3) 0%, transparent 70%);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.neomorph-btn:hover::before {
+  width: 300%;
+  height: 300%;
+}
+
+.neomorph-btn:hover {
+  box-shadow: 
+    -8px -8px 16px rgba(0, 0, 0, 0.4),
+    8px 8px 16px rgba(255, 255, 255, 0.05);
+}
+
+.neomorph-btn:active {
+  box-shadow: var(--neomorph-inset);
+  transform: scale(0.97);
+}
+
+/* Neomorphism input */
+.neomorph-input {
+  background: linear-gradient(145deg, #050505 0%, #080808 100%);
+  box-shadow: 
+    inset -4px -4px 8px rgba(0, 0, 0, 0.3),
+    inset 4px 4px 8px rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: all 0.3s ease;
+}
+
+.neomorph-input:focus {
+  box-shadow: 
+    inset -4px -4px 8px rgba(0, 0, 0, 0.4),
+    inset 4px 4px 8px rgba(255, 255, 255, 0.03),
+    0 0 0 3px rgba(245, 158, 11, 0.2);
+}
+
+/* Neomorphism badge */
+.neomorph-badge {
+  background: linear-gradient(145deg, #050505 0%, #080808 100%);
+  box-shadow: 
+    -3px -3px 6px rgba(0, 0, 0, 0.3),
+    3px 3px 6px rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+/* Neomorphism progress bar */
+.neomorph-progress {
+  background: linear-gradient(145deg, #050505 0%, #080808 100%);
+  box-shadow: 
+    inset -4px -4px 8px rgba(0, 0, 0, 0.3),
+    inset 4px 4px 8px rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  position: relative;
+  overflow: hidden;
+}
+
+.neomorph-progress-bar {
+  background: linear-gradient(90deg, rgba(245, 158, 11, 0.8), rgba(245, 158, 11, 0.3));
+  box-shadow: 
+    inset -2px -2px 4px rgba(0, 0, 0, 0.3),
+    inset 2px 2px 4px rgba(255, 255, 255, 0.1);
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Neomorphism toggle */
+.neomorph-toggle {
+  background: linear-gradient(145deg, #050505 0%, #080808 100%);
+  box-shadow: 
+    inset -4px -4px 8px rgba(0, 0, 0, 0.3),
+    inset 4px 4px 8px rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+}
+
+.neomorph-toggle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: linear-gradient(145deg, #050505 0%, #080808 100%);
+  box-shadow: 
+    -3px -3px 6px rgba(0, 0, 0, 0.3),
+    3px 3px 6px rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.neomorph-toggle.active::after {
+  left: calc(100% - 24px);
+  box-shadow: 
+    -3px -3px 6px rgba(0, 0, 0, 0.3),
+    3px 3px 6px rgba(245, 158, 11, 0.4);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+/* Neomorphism avatar */
+.neomorph-avatar {
+  background: linear-gradient(145deg, #050505 0%, #080808 100%);
+  box-shadow: 
+    -4px -4px 8px rgba(0, 0, 0, 0.3),
+    4px 4px 8px rgba(255, 255, 255, 0.04),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.neomorph-avatar:hover {
+  transform: scale(1.05);
+  box-shadow: 
+    -6px -6px 12px rgba(0, 0, 0, 0.4),
+    6px 6px 12px rgba(255, 255, 255, 0.06),
+    0 0 20px rgba(245, 158, 11, 0.2);
+}
+
+/* Neomorphism icon container */
+.neomorph-icon {
+  background: linear-gradient(145deg, #050505 0%, #080808 100%);
+  box-shadow: 
+    -6px -6px 12px rgba(0, 0, 0, 0.3),
+    6px 6px 12px rgba(255, 255, 255, 0.04),
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.neomorph-icon:hover {
+  box-shadow: 
+    -8px -8px 16px rgba(0, 0, 0, 0.4),
+    8px 8px 16px rgba(255, 255, 255, 0.06),
+    0 0 20px rgba(245, 158, 11, 0.2);
+  transform: scale(1.1);
+}
+
+/* RTL Support */
+[dir="rtl"] .neomorph-card:hover,
+[dir="rtl"] .neomorph-btn:hover {
+  transform: translate(-4px, 0);
+}
+
+[dir="rtl"] .neomorph-badge,
+[dir="rtl"] .neomorph-toggle::after {
+  transform: translateY(-50%) rotate(180deg);
+}
+
+[dir="rtl"] .neomorph-toggle.active::after {
+  left: 0;
+  right: calc(100% - 24px);
+}
+
+/* Animations */
+@keyframes neomorph-pulse {
+  0%, 100% {
+    box-shadow: 
+      -8px -8px 16px rgba(0, 0, 0, 0.3),
+      8px 8px 16px rgba(255, 255, 255, 0.04),
+      0 0 20px rgba(245, 158, 11, 0.1);
+  }
+  50% {
+    box-shadow: 
+      -12px -12px 24px rgba(0, 0, 0, 0.4),
+      12px 12px 24px rgba(255, 255, 255, 0.06),
+      0 0 30px rgba(245, 158, 11, 0.3);
+  }
+}
+
+@keyframes neomorph-glow {
+  0%, 100% {
+    box-shadow: 
+      -6px -6px 12px rgba(0, 0, 0, 0.3),
+      6px 6px 12px rgba(255, 255, 255, 0.03),
+      0 0 20px rgba(245, 158, 11, 0.2);
+  }
+  50% {
+    box-shadow: 
+      -6px -6px 12px rgba(0, 0, 0, 0.3),
+      6px 6px 12px rgba(255, 255, 255, 0.03),
+      0 0 30px rgba(245, 158, 11, 0.4);
+  }
+}
+
+.neomorph-pulse {
+  animation: neomorph-pulse 2s ease-in-out infinite;
+}
+
+.neomorph-glow {
+  animation: neomorph-glow 2s ease-in-out infinite;
+}
+
+/* Utility classes */
+.neomorph-sm {
+  border-radius: 12px;
+}
+
+.neomorph-md {
+  border-radius: 16px;
+}
+
+.neomorph-lg {
+  border-radius: 24px;
+}
+
+.neomorph-xl {
+  border-radius: 32px;
+}

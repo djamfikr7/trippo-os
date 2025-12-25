@@ -1,0 +1,381 @@
+// Trippo Logistics Platform - Database Schema
+// Adapted for SQLite (from PostgreSQL/PostGIS in spec)
+// Updated with File Upload Models (Fixed Relations)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  RIDER
+  DRIVER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  BLACKLISTED
+  UNDER_REVIEW
+}
+
+enum TripStatus {
+  REQUESTED     // Rider requested
+  SEARCHING     // System looking for driver
+  DRIVER_FOUND  // Driver assigned
+  ARRIVED       // Driver at pickup
+  IN_PROGRESS   // Trip started
+  COMPLETED     // Trip finished
+  CANCELLED     // Cancelled by either party
+}
+
+enum PaymentMethod {
+  CASH
+  WALLET // Optional future state
+}
+
+enum DocumentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ServiceType {
+  STANDARD_RIDE
+  PREMIUM_RIDE
+  BIKE
+  CARGO
+  TRUCK
+  TOWING
+  ON_SITE_REPAIR
+  INTERCITY
+  RIDE_SHARE
+}
+
+enum FraudType {
+  PAYMENT_AVOIDANCE
+  FAKE_LOCATION
+  ACCOUNT_TAKEOVER
+  ROUTE_MANIPULATION
+  PRICE_FRAUD
+  OTHER
+}
+
+enum BlacklistType {
+  TEMPORARY
+  PERMANENT
+}
+
+// NEW: File Upload Models
+enum FileFolder {
+  DOCUMENTS      // Driver verification documents
+  AVATARS        // User profile avatars
+  VEHICLE_IMAGES  // Driver vehicle photos
+  TRIP_PHOTOS    // Trip incident/evidence photos
+}
+
+enum FileStatus {
+  UPLOADING
+  COMPLETED
+  FAILED
+  DELETED
+}
+
+model User {
+  id            String     @id @default(cuid())
+  email         String     @unique
+  passwordHash  String
+  role          UserRole   @default(RIDER)
+  phone         String?    @unique
+  isVerified    Boolean    @default(false)
+  status        UserStatus @default(ACTIVE)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  // Profile Data
+  firstName     String
+  lastName      String
+  avatar        String?    @default("default-avatar.png")
+
+  // Rating & Trust
+  rating        Float      @default(5.0)
+  totalRatings  Int        @default(0)
+  trustScore    Int        @default(100) // 0-100, affects priority and privileges
+
+  // Cancellation tracking (for fraud detection)
+  cancellationsThisMonth Int        @default(0)
+  lastCancellationAt     DateTime?
+
+  // Relations
+  riderTrips     Trip[]          @relation("RiderTrips")
+  driverProfile  Driver?         @relation("DriverUser")
+  wallet         Wallet?         @relation("WalletUser")
+  fraudReports   FraudReport[]   @relation("FraudReportUser")
+  blacklistEntry BlacklistEntry? @relation("BlacklistUser")
+  documents      Document[]      @relation("UserDocuments")
+  files          UploadedFile[]  @relation("UploadedFiles")
+}
+
+model Driver {
+  id              String          @id @default(cuid())
+  userId          String          @unique
+  user            User            @relation("DriverUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  licensePlate    String          @unique
+  vehicleModel    String
+  vehicleColor    String
+  vehicleType     ServiceType     @default(STANDARD_RIDE)
+
+  // Support for multiple service types
+  supportedServices String          // JSON array of ServiceType
+
+  isOnline        Boolean         @default(false)
+  currentLat      Float?
+  currentLng      Float?
+  lastLocationUpdate DateTime?
+
+  rating          Float           @default(5.0)
+  totalTrips      Int             @default(0)
+
+  isVerified      Boolean         @default(false)
+
+  // Priority and merit-based routing
+  meritScore      Int             @default(0) // Based on rating, completion rate, reliability
+  tier            String          @default("BRONZE") // BRONZE, SILVER, GOLD, PLATINUM, DIAMOND
+
+  // Cancellation and reliability
+  cancellations   Int             @default(0)
+  completions    Int             @default(0)
+  noShows        Int             @default(0)
+
+  // Intercity eligibility
+  eligibleForIntercity Boolean        @default(false)
+
+  // Relations
+  trips           Trip[]          @relation("DriverTrips")
+  documents       Document[]     @relation("DriverDocuments")
+  vehicleImages   VehicleImage[]  @relation("VehicleImages")
+
+  @@map("drivers")
+}
+
+model Trip {
+  id              String        @id @default(cuid())
+  riderId         String
+  rider           User          @relation("RiderTrips", fields: [riderId], references: [id])
+
+  driverId        String?
+  driver          Driver?       @relation("DriverTrips", fields: [driverId], references: [id])
+
+  status          TripStatus    @default(REQUESTED)
+  serviceType     ServiceType   @default(STANDARD_RIDE)
+
+  // Ride Sharing
+  isShared        Boolean       @default(false)
+  sharedTripId    String?
+  sharedTrip      Trip?         @relation("SharedTrips", fields: [sharedTripId], references: [id])
+  rideShares      Trip[]        @relation("SharedTrips")
+
+  // Scheduled Rides
+  isScheduled     Boolean       @default(false)
+  scheduledFor    DateTime?
+
+  // Route Data
+  pickupLat       Float
+  pickupLng       Float
+  pickupAddress   String
+
+  dropoffLat      Float
+  dropoffLng      Float
+  dropoffAddress  String
+
+  distanceMeters  Int
+  durationSeconds Int
+
+  // Pricing with surge
+  baseFare        Float
+  surgeMultiplier  Float         @default(1.0)
+  fare             Float          // Final fare = baseFare * surgeMultiplier
+  estimatedFare    Float?         // Shown to rider before confirmation
+
+  paymentMethod   PaymentMethod @default(CASH)
+  isPaid          Boolean       @default(false)
+
+  createdAt       DateTime      @default(now())
+  startedAt       DateTime?
+  completedAt     DateTime?
+  cancelledAt     DateTime?
+  cancelReason    String?
+  cancelledBy     String?       // "RIDER" or "DRIVER"
+
+  // Relations
+  transactions    Transaction[] @relation("TripTransactions")
+  files           UploadedFile[] @relation("TripFiles")
+
+  @@map("trips")
+}
+
+model Transaction {
+  id          String    @id @default(cuid())
+  tripId      String
+  trip        Trip      @relation("TripTransactions", fields: [tripId], references: [id])
+
+  amount      Float
+  type        String   // "CASH_PAYMENT", "COMMISSION"
+
+  status      String   @default("COLLECTED") // COLLECTED, PENDING, DISPUTED
+  createdAt   DateTime @default(now())
+
+  @@map("transactions")
+}
+
+model Document {
+  id          String          @id @default(cuid())
+  driverId    String
+  driver      Driver          @relation("DriverDocuments", fields: [driverId], references: [id], onDelete: Cascade)
+
+  type        String          // "LICENSE", "VEHICLE_REG", "INSURANCE"
+  url         String          // S3 or Local Storage path
+  status      DocumentStatus  @default(PENDING)
+  notes       String?
+
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  // Relations
+  user        User?   @relation("UserDocuments", fields: [driverId], references: [id]) // Uses driverId but we'll need actual userId
+}
+
+// NEW: Vehicle Image Model
+model VehicleImage {
+  id          String    @id @default(cuid())
+  driverId    String
+  driver      Driver    @relation("VehicleImages", fields: [driverId], references: [id], onDelete: Cascade)
+
+  type        String   // "FRONT", "SIDE", "INTERIOR", "LICENSE"
+  url         String   // S3 or Local Storage path
+  caption     String?
+  order       Int      @default(0)
+
+  createdAt   DateTime  @default(now())
+
+  @@map("vehicle_images")
+}
+
+// NEW: Uploaded File Model (for file tracking)
+model UploadedFile {
+  id              String     @id @default(cuid())
+  uploaderId      String     // Can be userId or driverId
+  uploaderType    String     // "USER" or "DRIVER"
+  fileName        String
+  originalName    String
+  mimeType       String
+  size            Int        // in bytes
+  key             String     // S3 key
+  url             String     // Public S3 URL
+  folder          FileFolder @default(DOCUMENTS)
+  status          FileStatus @default(COMPLETED)
+  uploadedAt      DateTime   @default(now())
+  createdAt       DateTime   @default(now())
+  tripId          String?
+
+  // Relations
+  trip            Trip?   @relation("TripFiles", fields: [tripId], references: [id], onDelete: Cascade)
+  uploader        User?   @relation("UploadedFiles", fields: [uploaderId], references: [id], onDelete: Cascade)
+}
+
+model Wallet {
+  id          String    @id @default(cuid())
+  userId      String    @unique
+  user        User      @relation("WalletUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  balance     Float     @default(0.0)
+  currency    String   @default("USD")
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("wallets")
+}
+
+model FraudReport {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation("FraudReportUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  fraudType   FraudType
+  severity    String   @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
+  description String
+  evidence    String?   // JSON data
+
+  status      String   @default("PENDING") // PENDING, REVIEWING, RESOLVED, DISMISSED
+
+  tripId      String?
+  reportedBy  String   // "SYSTEM" or Admin ID
+  reportedAt  DateTime  @default(now())
+  resolvedAt  DateTime?
+
+  @@map("fraud_reports")
+}
+
+model BlacklistEntry {
+  id            String       @id @default(cuid())
+  userId        String       @unique
+  user          User         @relation("BlacklistUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  blacklistType BlacklistType @default(PERMANENT)
+  reason        String
+  evidence      String?
+
+  status        String       @default("ACTIVE") // ACTIVE, APPEALED, LIFTED
+
+  blacklistedAt DateTime   @default(now())
+  expiresAt     DateTime?
+  liftedAt      DateTime?
+  liftedBy      String?
+
+  @@map("blacklist_entries")
+}
+
+model SurgeZone {
+  id          String     @id @default(cuid())
+  name        String
+
+  // Geographic bounds (simplified for SQLite)
+  centerLat   Float
+  centerLng   Float
+  radiusMeters Int       @default(5000) // Default 5km radius
+
+  // Demand and pricing
+  demand      Float     @default(0) // 0-100 percentage
+  surgeMultiplier Float    @default(1.0)
+
+  // Historical data
+  avgWaitTime  Int       @default(0) // seconds
+  activeDrivers Int      @default(0)
+
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("surge_zones")
+}
+
+model RatingHistory {
+  id            String    @id @default(cuid())
+  userId        String
+  previousRating Float
+  newRating     Float
+  change        Float
+  reason        String
+  actionType    String // "DOWNGRADE", "UPGRADE", "NO_CHANGE"
+  actionedBy    String // "SYSTEM" or Admin ID
+  createdAt     DateTime  @default(now())
+
+  @@map("rating_history")
+}
